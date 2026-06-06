@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer Admin Insights</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell admin-shell">
+        <div class="page-glow page-glow-left"></div>
+        <div class="page-glow page-glow-right"></div>
+
+        <nav class="topbar panel">
+            <a href="{{ url_for('main.index') }}" class="brand-mark">ResumeIQ</a>
+            <div class="topbar-links">
+                <a href="{{ url_for('main.index') }}">Analyzer</a>
+                <a href="{{ url_for('main.admin') }}">Admin Insights</a>
+            </div>
+        </nav>
+
+        <header class="panel feature-panel admin-hero">
+            <div>
+                <p class="eyebrow">Admin Insights</p>
+                <h1 class="admin-title">System catalog, rubric, and role-track coverage.</h1>
+                <p class="hero-text">This view is designed for future admin users to inspect the in-memory domain dataset and the score logic that powers V1.1 recommendations.</p>
+            </div>
+            <div class="hero-metrics admin-metrics">
+                <div>
+                    <span>{{ admin_summary|length }}</span>
+                    <p>domains configured</p>
+                </div>
+                <div>
+                    <span>{{ total_required_skills }}</span>
+                    <p>required skill slots</p>
+                </div>
+                <div>
+                    <span>{{ total_role_tracks }}</span>
+                    <p>role tracks curated</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="dashboard-grid">
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Scoring Rubric</h3>
+                        <span>weighted V1.1 score components</span>
+                    </div>
+                    <div class="score-list">
+                        {% for label, value in rubric.items() %}
+                            <div class="score-row">
+                                <div class="score-labels">
+                                    <strong>{{ label.replace('_', ' ') }}</strong>
+                                    <span>{{ (value * 100) | round(0) | int }}%</span>
+                                </div>
+                                <div class="score-bar">
+                                    <span style="width: {{ value * 100 }}%"></span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Domain Coverage</h3>
+                        <span>catalog overview</span>
+                    </div>
+                    <div class="admin-summary-list">
+                        {% for item in admin_summary %}
+                            <div class="admin-summary-card">
+                                <strong>{{ item.domain }}</strong>
+                                <p>{{ item.required_count }} required skills · {{ item.role_count }} role tracks</p>
+                                <span>{{ item.sample_skills | join(', ') }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+
+            <section class="panel roadmap-panel">
+                <div class="section-heading roadmap-header">
+                    <div>
+                        <h3>Role Tracks by Domain</h3>
+                        <p>Each domain now recommends more specific internship paths instead of only a top-level category.</p>
+                    </div>
+                </div>
+
+                <div class="roadmap-grid admin-role-grid">
+                    {% for domain, data in domain_catalog.items() %}
+                        <article class="roadmap-card">
+                            <p class="roadmap-step">{{ domain }}</p>
+                            <h4>{{ data.headline }}</h4>
+                            <ul>
+                                {% for role in data.role_tracks %}
+                                    <li><strong>{{ role.title }}</strong> · {{ role.focus }}</li>
+                                {% endfor %}
+                            </ul>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

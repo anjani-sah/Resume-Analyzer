@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Skill Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <div class="page-glow page-glow-left"></div>
+        <div class="page-glow page-glow-right"></div>
+
+        <nav class="topbar panel">
+            <a href="{{ url_for('main.index') }}" class="brand-mark">ResumeIQ</a>
+            <div class="topbar-links">
+                <a href="{{ url_for('main.index') }}">Analyzer</a>
+                <a href="{{ url_for('main.admin') }}">Admin Insights</a>
+            </div>
+        </nav>
+
+        <header class="hero">
+            <div class="hero-copy panel">
+                <p class="eyebrow">AI Resume Intelligence</p>
+                <h1>Turn a resume into a clear career domain, skill gap map, and learning roadmap.</h1>
+                <p class="hero-text">
+                    Built for students who need fast, structured guidance across Data Science, Web Development, AI/ML, Cybersecurity, and Cloud Computing.
+                </p>
+
+                <div class="hero-metrics">
+                    <div>
+                        <span>5</span>
+                        <p>career domains</p>
+                    </div>
+                    <div>
+                        <span>&lt; 5s</span>
+                        <p>target analysis time</p>
+                    </div>
+                    <div>
+                        <span>0</span>
+                        <p>stored resumes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-panel panel">
+                <div class="panel-header">
+                    <p class="eyebrow">Upload Resume</p>
+                    <span class="status-pill">PDF only · 5 MB max</span>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" class="upload-form" id="upload-form">
+                    <label for="resume" class="upload-dropzone" id="upload-dropzone">
+                        <input type="file" name="resume" id="resume" accept=".pdf,application/pdf" required>
+                        <span class="upload-icon">+</span>
+                        <strong>Select or drop your resume</strong>
+                        <small id="file-name">Machine-readable PDF resumes work best.</small>
+                    </label>
+                    <button type="submit" class="primary-button">Analyze Resume</button>
+                </form>
+
+                {% if error %}
+                    <div class="message error-message">{{ error }}</div>
+                {% endif %}
+
+                <div class="mini-grid">
+                    {% for domain, data in domain_catalog.items() %}
+                        <article class="mini-card">
+                            <p>{{ domain }}</p>
+                            <span>{{ data.required_skills[:3] | join(', ') }}</span>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </header>
+
+        {% if result %}
+        <main class="dashboard">
+            <section class="panel feature-panel spotlight">
+                <div>
+                    <p class="eyebrow">Predicted Domain</p>
+                    <h2>{{ result.predicted_domain }}</h2>
+                    <p class="section-copy">{{ result.headline }}</p>
+                </div>
+                <div class="spotlight-metrics">
+                    <div>
+                        <span>{{ result.resume_score }}%</span>
+                        <p>overall readiness score</p>
+                    </div>
+                    <div>
+                        <span>{{ result.coverage }}%</span>
+                        <p>domain skill coverage</p>
+                    </div>
+                    <div>
+                        <span>{{ result.confidence }}%</span>
+                        <p>model confidence</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard-grid">
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Extracted Skills</h3>
+                        <span>{{ result.extracted_skills | length }} detected</span>
+                    </div>
+                    <div class="chip-cloud">
+                        {% if result.extracted_skills %}
+                            {% for skill in result.extracted_skills %}
+                                <span class="chip">{{ skill }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">No tracked skills were detected. The resume may be too generic or the PDF text may be incomplete.</p>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Domain Match Breakdown</h3>
+                        <span>inspired by keyword coverage tools</span>
+                    </div>
+                    <div class="score-list">
+                        {% for domain, score in result.domain_scores %}
+                            <div class="score-row">
+                                <div class="score-labels">
+                                    <strong>{{ domain }}</strong>
+                                    <span>{{ score }}%</span>
+                                </div>
+                                <div class="score-bar">
+                                    <span style="width: {{ score }}%"></span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Score Breakdown</h3>
+                        <span>weighted V1.1 readiness logic</span>
+                    </div>
+                    <div class="score-list">
+                        {% for component in result.score_breakdown %}
+                            <div class="score-row">
+                                <div class="score-labels">
+                                    <strong>{{ component.label }}</strong>
+                                    <span>{{ component.raw }} raw · {{ component.weighted }} weighted</span>
+                                </div>
+                                <div class="score-bar">
+                                    <span style="width: {{ component.raw }}%"></span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Strength Signals</h3>
+                        <span>what is already working</span>
+                    </div>
+                    <ul class="insight-list">
+                        {% for item in result.strengths %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </article>
+
+                <article class="panel feature-panel">
+                    <div class="section-heading">
+                        <h3>Missing Skills</h3>
+                        <span>{{ result.missing_skills | length }} gaps</span>
+                    </div>
+                    <div class="chip-cloud warning-cloud">
+                        {% if result.missing_skills %}
+                            {% for skill in result.missing_skills %}
+                                <span class="chip warning-chip">{{ skill }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">No major gaps detected against the tracked baseline for this domain.</p>
+                        {% endif %}
+                    </div>
+                    <ul class="insight-list compact-list">
+                        {% for item in result.gaps %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </article>
+            </section>
+
+            <section class="panel feature-panel role-fit-panel">
+                <div class="section-heading">
+                    <h3>Recommended Role Tracks</h3>
+                    <span>specific internship paths within {{ result.predicted_domain }}</span>
+                </div>
+                <div class="role-grid">
+                    {% for role in result.role_recommendations %}
+                        <article class="role-card">
+                            <div class="role-card-top">
+                                <div>
+                                    <h4>{{ role.title }}</h4>
+                                    <p>{{ role.focus }}</p>
+                                </div>
+                                <span class="role-fit-score">{{ role.fit_score }}%</span>
+                            </div>
+                            <div class="role-meta">
+                                <strong>Matched:</strong>
+                                <span>{{ role.matched | join(', ') if role.matched else 'No tracked match yet' }}</span>
+                            </div>
+                            <div class="role-meta muted-role-meta">
+                                <strong>Need next:</strong>
+                                <span>{{ role.missing | join(', ') if role.missing else 'Core role requirements detected' }}</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="panel roadmap-panel">
+                <div class="section-heading roadmap-header">
+                    <div>
+                        <h3>Recommended Learning Roadmap</h3>
+                        <p>{{ result.summary }}</p>
+                    </div>
+                </div>
+
+                <div class="roadmap-grid">
+                    {% for stage in result.roadmap %}
+                        <article class="roadmap-card">
+                            <p class="roadmap-step">Stage {{ loop.index }}</p>
+                            <h4>{{ stage['title'] }}</h4>
+                            <p>{{ stage['goal'] }}</p>
+                            <ul>
+                                {% for item in stage['items'] %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if extracted_text_preview %}
+            <section class="panel feature-panel preview-panel">
+                <div class="section-heading">
+                    <h3>Extracted Text Preview</h3>
+                    <span>first 500 characters</span>
+                </div>
+                <p class="preview-text">{{ extracted_text_preview }}{% if extracted_text_preview|length >= 500 %}...{% endif %}</p>
+            </section>
+            {% endif %}
+        </main>
+        {% else %}
+        <main class="dashboard empty-dashboard">
+            <section class="panel feature-panel placeholder-panel">
+                <p class="eyebrow">How the system works</p>
+                <div class="placeholder-flow">
+                    <div>Upload resume</div>
+                    <div>Extract skills</div>
+                    <div>Predict domain</div>
+                    <div>Rank role tracks</div>
+                    <div>Find gaps</div>
+                    <div>Generate roadmap</div>
+                </div>
+            </section>
+        </main>
+        {% endif %}
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
